@@ -1,0 +1,32 @@
+{
+    "name": "URLKit",
+    "description": "",
+    "homepage": "https://github.com/dexteryy/URLKit",
+    "author": {
+        "name": "dexteryy",
+        "email": "dexter.yy@gmail.com",
+        "url": "http://github.com/dexteryy"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/dexteryy/URLKit.git"
+    },
+    "licenses": [{
+        "type": "MIT",
+        "url": "http://www.opensource.org/licenses/mit-license.php"
+    }],
+    "keywords" : [
+        "AMD",
+        "oz",
+        "ozjs"
+    ],
+    "main": "urlkit",
+    "version": "1.0.0",
+    "volo": {
+        "dependencies": {
+        }
+    },
+    "dependencies": {
+
+    }
+}
