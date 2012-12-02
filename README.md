@@ -34,7 +34,7 @@ title: URLKit
 ## API and usage
 
 ```javascript
-var URLKit = require('mod/urlkit');
+var URLKit = require('urlkit');
 ```
 
 * `URLKit.parse(url)` -- 
