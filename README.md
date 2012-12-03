@@ -18,7 +18,6 @@ title: URLKit
 ## Dependencies
 
 * [mo/lang](https://github.com/dexteryy/mo)
-* [mo/browsers](https://github.com/dexteryy/mo)
 
 ## Examples
 
