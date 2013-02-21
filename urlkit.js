@@ -16,9 +16,9 @@ define("urlkit", [
     var encode = encodeURIComponent,
         decode = decodeURIComponent,
         doc = document,
-        _has_pushState = !!history.pushState,
-        RE_URLROOT = _has_pushState ? /(https?:\/\/.+?|^)\// : /.*?(?=#|$)/,
-        RE_HASHBANG = _has_pushState ? /#.*/ : /#!?\/?/,
+        _has_pushState,
+        RE_URLROOT,
+        RE_HASHBANG,
         RE_KVRULE = /([^&=\?]+)(=[^&=]*)/g,
         RE_GETHASH = /.+#!?\/?/,
         _default_config = {
@@ -31,120 +31,9 @@ define("urlkit", [
             route: true
         };
 
-    function route_match(url, route, handler){
-        var rule = Array.isArray(route) ? route[0] : route;
-        if (typeof rule === "object") {
-            for (var r in route) {
-                route_match(url, r, route[r]);
-            }
-        }
-        if (typeof rule !== "string") {
-            return false;
-        }
-        var re_route = (_has_pushState ? "^" : "^#!?") 
-                        + (rule && rule.replace(/\/?$/, '/?').replace(/:\w+/g, '([^\/#\\?]+)') || "") + "(\\?.*|$)",
-            args = url.match(new RegExp(re_route));
-        if (!args) {
-            if (url !== rule) {
-                return rule !== route && route_match(url, route.slice(1), handler) || false;
-            } else {
-                args = [""];
-            }
-        }
-        var params = {},
-            kv = args.pop().replace(/^\?/, '').split(/&/);
-        for (var i = 0, a, l = kv.length; i < l; i++) {
-            a = kv[i].split("=");
-            if (a[0]) {
-                params[a[0]] = a[1];
-            }
-        }
-        args[0] = params;
-        handler.apply(this, args);
-        return true;
-    }
+    use_pushState(!!history.pushState);
 
-    /**
-     * @return {array}  例如"http://10.0.2.172:9253/page/2/#!/page/1/?name=yy&no=3"
-     *                  在ie10-里返回值为[{ "name": "yy", "no": "3" }, "page", "1"]
-     *                  在支持pushState的浏览器里返回[{}, "page", "2"]
-     */
-    function parse(s){
-        s = s.replace(RE_URLROOT, '').replace(RE_HASHBANG, '');
-        if (!s)
-            return [{}];
-        s = s.split('/');
-        var kv, p = {}, hasParam,
-            o = s.pop(),
-            prule = /\?.*/;
-        if (o) {
-            var end = o.replace(prule, '');
-            if (/\=/.test(o)) {
-                if (end && prule.test(o)) {
-                    s.push(end);
-                }
-                while (kv = RE_KVRULE.exec(o)) {
-                    p[kv[1]] = kv[2].substr(1);
-                }
-            } else {
-                s.push(end);
-                p = {};
-            }
-        } else {
-            p = {};
-        }
-        s.unshift(p);
-        return s;
-    }
-
-    function param(obj, opt){
-        obj = Array.isArray(obj) ? obj.slice() : [obj];
-        var s = obj.shift(), o = [];
-        obj = obj.filter(function(a){ return a !== ""; });
-        for (var k in s) {
-            if (k) {
-                o.push(encode(k) + '=' + encode(s[k]));
-            }
-        }
-        var params = o.length ? '?' + o.join("&") : '';
-        if (opt && opt.ending) {
-            obj.push(params);
-            return obj.join('/');
-        } else {
-            return obj.join('/') + params;
-        }
-    }
-
-    function tidy_url(opt){
-        var loc = this.location;
-        if (_has_pushState) {
-            if (/#/.test(loc.href)) {
-                var hash_url = loc.href.replace(/.*?#/, '#');
-                if (/#.*#/.test(hash_url)) {
-                    hash_url = hash_url.replace(/(.*?#.*?)#.*/, '$1');
-                }
-                hash_url = hash_url.replace(/^\/?#!?\/?/, '/');
-                if (this.checkRules(hash_url, this._route_config)) {
-                    loc.replace(this.baseUrl + hash_url);
-                } else {
-                    loc.replace(loc.href.replace(/#.*/, ''));
-                }
-            }
-        } else {
-            var key_url = '#!' + get_key_url.apply(this);
-            if (this.checkRules(key_url, this._route_config)) {
-                this.load('/' + key_url, { replace: true });
-            } else if (/#.*#/.test(loc.href)) {
-                loc.replace(loc.href.replace(/(.*?#.*?)#.*/, '$1'));
-            }
-        }
-    }
-
-    function get_key_url(){
-        return this.location.href.replace(this.baseUrl, '').replace(/#.*/, '');
-    }
-
-    function URLkit(opt){
+    function URLKit(opt){
         var self = this;
         this._route_config = [];
         this._hash_cache = false;
@@ -165,7 +54,7 @@ define("urlkit", [
         this.set(opt);
     }
 
-    URLkit.prototype = {
+    URLKit.prototype = {
 
         set: function(opt){
             _.config(this, opt || {}, _default_config);
@@ -217,8 +106,7 @@ define("urlkit", [
                 isMuti = typeof name === 'object',
                 loc = this.location,
                 loc_hash = this.getHash(),
-                hash = parse(loc_hash),
-                l = hash.length;
+                hash = parse(loc_hash);
             if (isMuti) {
                 data = name;
                 opt = value;
@@ -321,22 +209,147 @@ define("urlkit", [
 
     };
 
-    if (_has_pushState) {
-        URLkit.prototype.getHash = get_key_url;
-    } else {
-        URLkit.prototype.getHash = function(){
-            return (/#/.test(this.location.href)) ? this.location.href.replace(RE_GETHASH, '#!/') : '#!/';
-        };
+    function route_match(url, route, handler){
+        var rule = Array.isArray(route) ? route[0] : route;
+        if (typeof rule === "object") {
+            for (var r in route) {
+                route_match(url, r, route[r]);
+            }
+        }
+        if (typeof rule !== "string") {
+            return false;
+        }
+        var re_route = (_has_pushState ? "^" : "^#!?") 
+                        + (rule && rule.replace(/\/?$/, '/?').replace(/:\w+/g, '([^\/#\\?]+)') || "") + "(\\?.*|$)",
+            args = url.match(new RegExp(re_route));
+        if (!args) {
+            if (url !== rule) {
+                return rule !== route && route_match(url, route.slice(1), handler) || false;
+            } else {
+                args = [""];
+            }
+        }
+        var params = {},
+            kv = args.pop().replace(/^\?/, '').split(/&/);
+        for (var i = 0, a, l = kv.length; i < l; i++) {
+            a = kv[i].split("=");
+            if (a[0]) {
+                params[a[0]] = a[1];
+            }
+        }
+        args[0] = params;
+        handler.apply(this, args);
+        return true;
     }
 
-    var exports = function(opt){
-        return new URLkit(opt);
+    /**
+     * @return {array}  例如"http://10.0.2.172:9253/page/2/#!/page/1/?name=yy&no=3"
+     *                  在ie10-里返回值为[{ "name": "yy", "no": "3" }, "page", "1"]
+     *                  在支持pushState的浏览器里返回[{}, "page", "2"]
+     */
+    function parse(s){
+        s = s.replace(RE_URLROOT, '').replace(RE_HASHBANG, '');
+        if (!s)
+            return [{}];
+        s = s.split('/');
+        var kv, p = {},
+            o = s.pop(),
+            prule = /\?.*/;
+        if (o) {
+            var end = o.replace(prule, '');
+            if (/\=/.test(o)) {
+                if (end && prule.test(o)) {
+                    s.push(end);
+                }
+                while (kv = RE_KVRULE.exec(o)) {
+                    p[kv[1]] = kv[2].substr(1);
+                }
+            } else {
+                s.push(end);
+                p = {};
+            }
+        } else {
+            p = {};
+        }
+        s.unshift(p);
+        return s;
+    }
+
+    function param(obj, opt){
+        obj = Array.isArray(obj) ? obj.slice() : [obj];
+        var s = obj.shift(), o = [];
+        obj = obj.filter(function(a){ return a !== ""; });
+        for (var k in s) {
+            if (k) {
+                o.push(encode(k) + '=' + encode(s[k]));
+            }
+        }
+        var params = o.length ? '?' + o.join("&") : '';
+        if (opt && opt.ending) {
+            obj.push(params);
+            return obj.join('/');
+        } else {
+            return obj.join('/') + params;
+        }
+    }
+
+    function tidy_url(){
+        var loc = this.location;
+        if (_has_pushState) {
+            if (/#/.test(loc.href)) {
+                var hash_url = loc.href.replace(/.*?#/, '#');
+                if (/#.*#/.test(hash_url)) {
+                    hash_url = hash_url.replace(/(.*?#.*?)#.*/, '$1');
+                }
+                hash_url = hash_url.replace(/^\/?#!?\/?/, '/');
+                if (this.checkRules(hash_url, this._route_config)) {
+                    loc.replace(this.baseUrl + hash_url);
+                } else {
+                    loc.replace(loc.href.replace(/#.*/, ''));
+                }
+            }
+        } else {
+            var key_url = '#!' + get_key_url.apply(this);
+            if (this.checkRules(key_url, this._route_config)) {
+                this.load('/' + key_url, { replace: true });
+            } else if (/#.*#/.test(loc.href)) {
+                loc.replace(loc.href.replace(/(.*?#.*?)#.*/, '$1'));
+            }
+        }
+    }
+
+    function get_key_url(){
+        return this.location.href.replace(this.baseUrl, '').replace(/#.*/, '');
+    }
+
+    function use_pushState(isEnable){
+        _has_pushState = exports.SUPPORT_PUSHSTATE = isEnable;
+        RE_URLROOT = _has_pushState ? /(https?:\/\/.+?|^)\// : /.*?(?=#|$)/,
+        RE_HASHBANG = _has_pushState ? /#.*/ : /#!?\/?/,
+        if (_has_pushState) {
+            URLKit.prototype.getHash = get_key_url;
+        } else {
+            URLKit.prototype.getHash = function(){
+                return (/#/.test(this.location.href)) ? this.location.href.replace(RE_GETHASH, '#!/') : '#!/';
+            };
+        }
+    }
+
+    function exports(opt){
+        return new exports.URLKit(opt);
+    }
+
+    exports.URLKit = URLKit;
+
+    exports.config = function(opt){
+        if (opt.disablePushState) {
+            use_pushState(false);
+        }
     };
 
     exports.parse = parse;
     exports.param = param;
-    exports.SUPPORT_PUSHSTATE = _has_pushState;
-    exports.VERSION = '1.0.1';
+    exports.VERSION = '1.0.2';
 
     return exports;
 
