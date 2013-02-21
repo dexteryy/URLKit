@@ -322,8 +322,8 @@ define("urlkit", [
 
     function use_pushState(isEnable){
         _has_pushState = exports.SUPPORT_PUSHSTATE = isEnable;
-        RE_URLROOT = _has_pushState ? /(https?:\/\/.+?|^)\// : /.*?(?=#|$)/,
-        RE_HASHBANG = _has_pushState ? /#.*/ : /#!?\/?/,
+        RE_URLROOT = _has_pushState ? /(https?:\/\/.+?|^)\// : /.*?(?=#|$)/;
+        RE_HASHBANG = _has_pushState ? /#.*/ : /#!?\/?/;
         if (_has_pushState) {
             URLKit.prototype.getHash = get_key_url;
         } else {
