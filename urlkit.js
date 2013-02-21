@@ -31,8 +31,6 @@ define("urlkit", [
             route: true
         };
 
-    use_pushState(!!history.pushState);
-
     function URLKit(opt){
         var self = this;
         this._route_config = [];
@@ -350,6 +348,8 @@ define("urlkit", [
     exports.parse = parse;
     exports.param = param;
     exports.VERSION = '1.0.2';
+
+    use_pushState(!!history.pushState);
 
     return exports;
 
