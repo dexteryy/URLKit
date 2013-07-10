@@ -1,0 +1,19 @@
+{
+    "name": "urlkit",
+    "description": "A lightweight implementation of routing and URL manager",
+    "version": "1.0.2",
+    "main": "urlkit.js",
+    "dependencies": {
+        "mo": "~1.5.2"
+    },
+    "ignore": [
+        "**/.*",
+        "dest",
+        "npmpackage",
+        "node_modules",
+        "components",
+        "bower_components",
+        "test",
+        "tests"
+    ]
+}
