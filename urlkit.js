@@ -10,8 +10,9 @@
  * vim: et:ts=4:sw=4:sts=4
  */
 define("urlkit", [
-   "mo/lang"
-], function(_){
+   "mo/lang/es5",
+   "mo/lang/mix"
+], function(_0, _){
 
     var encode = encodeURIComponent,
         decode = decodeURIComponent,
